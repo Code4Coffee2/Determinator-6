@@ -1,0 +1,2879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock App</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #e3f2fd;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            padding: 30px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 2.5em;
+            font-family: 'Earth', 'Orbitron', 'Arial Black', sans-serif;
+            font-weight: bold;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .section-title {
+            font-size: 1.5em;
+            color: #555;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #4A90E2;
+            padding-bottom: 10px;
+        }
+
+        .ticker-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        input[type="text"], input[type="number"] {
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus, input[type="number"]:focus {
+            outline: none;
+            border-color: #4A90E2;
+        }
+
+        button {
+            padding: 12px 24px;
+            background: #4A90E2;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #3A7BC8;
+        }
+
+        button.delete-btn {
+            background: #e74c3c;
+            padding: 4px 8px;
+            font-size: 14px;
+            color: white;
+            font-weight: bold;
+            min-width: 24px;
+            height: 24px;
+            line-height: 1;
+        }
+
+        button.delete-btn:hover {
+            background: #c0392b;
+        }
+
+        button.move-btn {
+            background: #6c757d;
+            padding: 4px 8px;
+            font-size: 12px;
+            color: white;
+            font-weight: bold;
+            min-width: 24px;
+            height: 24px;
+            line-height: 1;
+            margin: 0 2px;
+        }
+
+        button.move-btn:hover {
+            background: #5a6268;
+        }
+
+        button.move-btn:disabled {
+            background: #adb5bd;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .criteria-section-compact {
+            padding: 10px 20px;
+            margin-bottom: 30px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: #f8f9fa;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .criteria-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            padding-bottom: 6px;
+            border-bottom: 2px solid #4A90E2;
+        }
+        
+        .criteria-section-compact .section-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+        
+        .ticker-management-section .section-title {
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .criteria-section {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+
+        .criterion {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .criterion label {
+            margin-bottom: 0;
+            color: #4A90E2;
+            font-weight: 600;
+            font-size: 1.08em; /* 10% smaller than 1.2em (1.2 * 0.9 = 1.08) */
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .criterion input {
+            width: 78px;
+            padding: 6px 8px;
+            font-size: 13px;
+            text-align: center;
+            border: 2px solid #4A90E2;
+        }
+
+        .criterion:nth-child(2) {
+            justify-content: center;
+        }
+
+        .criterion:nth-child(3) {
+            justify-content: flex-end;
+        }
+        
+        .criteria-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .criteria-buttons button {
+            padding: 6px 12px;
+            font-size: 13px;
+            height: auto;
+            line-height: 1.4;
+        }
+
+        .ticker-list {
+            margin-top: 15px;
+        }
+
+        .ticker-item {
+            display: inline-block;
+            background: #4A90E2;
+            color: white;
+            padding: 8px 15px;
+            margin: 5px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+
+        .ticker-item .ticker-symbol {
+            font-weight: bold;
+        }
+
+        .ticker-item button {
+            padding: 2px 5px;
+            font-size: 8px;
+            min-width: 14px;
+            height: 14px;
+            line-height: 1;
+        }
+
+        .stock-table-container {
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        .stock-table-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        table {
+            width: 100%;
+            min-width: 800px;
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+        }
+
+        thead {
+            position: sticky;
+            z-index: 98;
+        }
+        
+        th {
+            background: #4A90E2;
+            color: white;
+            font-weight: 600;
+            position: sticky;
+            z-index: 98;
+        }
+
+        td.calculated-column {
+            background: #f5f5f5;
+        }
+
+        tr:hover {
+            background: #f5f5f5;
+        }
+
+        tr.highlight {
+            background: #E8F8E8 !important;
+        }
+
+        tr.highlight:hover {
+            background: #D8F5D8 !important;
+        }
+
+        tr.highlight td.calculated-column {
+            background: #E8F8E8 !important;
+        }
+
+        tr.highlight:hover td.calculated-column {
+            background: #D8F5D8 !important;
+        }
+
+        .ticker-clickable {
+            cursor: pointer;
+            color: #4A90E2;
+            font-weight: 600;
+            text-decoration: underline;
+        }
+
+        .ticker-clickable:hover {
+            color: #3A7BC8;
+        }
+
+        .chart-container {
+            margin-top: 0;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .chart-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .chart-controls button {
+            padding: 10px 20px;
+            background: #6c757d;
+            font-size: 13px;
+        }
+
+        .chart-controls button.active {
+            background: #4A90E2;
+        }
+
+        .api-key-section {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #ffc107;
+        }
+
+        .api-key-section input {
+            width: 100%;
+            max-width: 400px;
+            margin-top: 10px;
+        }
+
+        .stock-table-section {
+            position: relative;
+            padding: 10px 20px;
+        }
+        
+        .ticker-management-section {
+            padding: 10px 20px;
+        }
+        
+        .column-selector-row {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: transparent; /* Remove blue background */
+            box-shadow: none; /* Remove shadow */
+            display: table-row; /* Ensure row is visible */
+        }
+        
+        .column-selector-row th {
+            padding: 8px;
+            text-align: center;
+            vertical-align: middle;
+            border-bottom: 2px solid #dee2e6;
+            min-width: 80px; /* Ensure cells have minimum width */
+            background: transparent !important; /* Override blue background from th rule */
+            color: inherit; /* Use default text color, not white */
+        }
+        
+        .column-selector-row label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            cursor: pointer;
+            margin: 0;
+            font-size: 0.9em;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #4A90E2;
+            font-weight: 600;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <!-- Criteria Section -->
+        <div class="section criteria-section-compact">
+            <div class="criteria-header">
+                <div class="section-title">Filtering Criteria</div>
+                <div class="criteria-buttons">
+                    <button onclick="fetchAllData()">Refresh Data</button>
+                    <button id="realTimeToggle" onclick="toggleRealTimeUpdates()" style="background: #28a745;">Start Real-Time Updates</button>
+                </div>
+            </div>
+            <div class="criteria-section">
+                <div class="criterion">
+                    <label>% Lower Than Prior Close (Change %)</label>
+                    <input type="text" id="criterion1" placeholder="Enter %" />
+                </div>
+                <div class="criterion">
+                    <label>% Within the 90-Day Low</label>
+                    <input type="text" id="criterion2" placeholder="Enter %" />
+                </div>
+                <div class="criterion">
+                    <label>% Lower Than 90-Day High</label>
+                    <input type="text" id="criterion3" placeholder="Enter %" />
+                </div>
+            </div>
+        </div>
+
+        <!-- Stock Table Section -->
+        <div class="section stock-table-section">
+            <div class="stock-table-container">
+                <div id="tableLoading" class="loading" style="display: none;">Loading data...</div>
+                <div class="stock-table-wrapper">
+                    <table id="stockTable">
+                        <thead id="tableHead">
+                            <tr id="columnSelectorRow" class="column-selector-row"></tr>
+                        </thead>
+                        <tbody id="tableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chart Section -->
+        <div class="section chart-container">
+            <div class="chart-controls" id="chartControls"></div>
+            <canvas id="stockChart"></canvas>
+        </div>
+
+        <!-- Ticker Management Section -->
+        <div class="section ticker-management-section">
+            <div class="section-title">Ticker Management</div>
+            <div class="ticker-controls">
+                <input type="text" id="tickerInput" placeholder="Enter stock ticker (e.g., AAPL)" style="width: 220px;" />
+                <button onclick="addTicker()">Add Ticker</button>
+            </div>
+            <div class="ticker-list" id="tickerList"></div>
+            <div id="storageInfo" style="margin-top: 10px; font-size: 0.9em; color: #666;"></div>
+        </div>
+
+    </div>
+
+    <script>
+        // Global variables
+        let tickers = [];
+        let stockData = {};
+        let chart = null;
+        let currentChartTicker = null;
+        let currentTimePeriod = 180;
+        let realTimeRefreshInterval = null;
+        let isRealTimeActive = false;
+        let isRefreshing = false; // Prevent overlapping refresh calls
+        let visibleColumns = {
+            'Ticker': true,
+            'Change %': true,
+            'Current Price': true,
+            'Target Price': true,
+            '90-Day Low': true,
+            'Low Price Range Top': true,
+            '90-Day High': true,
+            'High Price Decline Target': true
+        };
+
+        // Make diagnostic function available immediately (before DOM loads)
+        function checkRealTimeStatus() {
+            console.log('=== Real-Time Update Status ===');
+            console.log('isRealTimeActive:', isRealTimeActive);
+            console.log('realTimeRefreshInterval:', realTimeRefreshInterval ? 'SET' : 'NULL');
+            console.log('isRefreshing:', isRefreshing);
+            if (realTimeRefreshInterval) {
+                console.log('Interval is running');
+            } else {
+                console.warn('⚠ Interval is NOT running - real-time updates may not be active');
+            }
+            console.log('Number of tickers:', tickers.length);
+            console.log('Stock data entries:', Object.keys(stockData).length);
+            console.log('===============================');
+            return {
+                isRealTimeActive,
+                intervalRunning: !!realTimeRefreshInterval,
+                isRefreshing,
+                tickerCount: tickers.length,
+                dataCount: Object.keys(stockData).length
+            };
+        }
+        
+        // Make it available globally
+        window.checkRealTimeStatus = checkRealTimeStatus;
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if running from file:// protocol (won't work due to CORS)
+            if (window.location.protocol === 'file:') {
+                showMessage('⚠️ This app must be run through a web server, not by opening the file directly. See README-CHROMEBOOK.md for setup instructions. Use a local server like "Web Server for Chrome" extension.', 'error');
+                // Make the error message persistent
+                const errorMsg = document.querySelector('.error');
+                if (errorMsg) {
+                    errorMsg.style.position = 'fixed';
+                    errorMsg.style.top = '10px';
+                    errorMsg.style.left = '50%';
+                    errorMsg.style.transform = 'translateX(-50%)';
+                    errorMsg.style.zIndex = '10000';
+                    errorMsg.style.maxWidth = '90%';
+                    errorMsg.style.padding = '15px';
+                    errorMsg.style.fontSize = '14px';
+                    errorMsg.style.boxShadow = '0 4px 6px rgba(0,0,0,0.3)';
+                }
+            }
+            
+            // Check localStorage availability on load
+            if (!isLocalStorageAvailable()) {
+                showMessage('⚠️ localStorage is not available. This may be due to private/incognito mode or browser settings. Data will not persist.', 'error');
+            }
+            
+            loadTickers();
+            setupColumnSelector();
+            setupChartControls();
+            setupAutoApplyCriteria();
+            updateStorageInfo();
+            
+            // Update sticky positions after a short delay to ensure DOM is ready
+            setTimeout(() => {
+                updateStickyPositions();
+            }, 200);
+            
+            // Update storage info periodically
+            setInterval(updateStorageInfo, 5000);
+            
+            // Update sticky positions on window resize
+            window.addEventListener('resize', () => {
+                setTimeout(() => updateStickyPositions(), 100);
+            });
+        });
+        
+        // Update sticky positions for criteria section, column selector row, and table header
+        function updateStickyPositions() {
+            const criteriaSection = document.querySelector('.criteria-section-compact');
+            const columnSelectorRow = document.getElementById('columnSelectorRow');
+            
+            if (!criteriaSection) {
+                return;
+            }
+            
+            // Force a reflow to ensure accurate measurements
+            void criteriaSection.offsetHeight;
+            
+            // Calculate heights
+            const criteriaHeight = criteriaSection.offsetHeight;
+            let columnSelectorHeight = 0;
+            
+            if (columnSelectorRow) {
+                void columnSelectorRow.offsetHeight;
+                columnSelectorHeight = columnSelectorRow.offsetHeight;
+                // Set column selector row to stick below criteria section
+                columnSelectorRow.style.top = criteriaHeight + 'px';
+            }
+            
+            // Set table header row to stick below both criteria and column selector row
+            const totalTop = criteriaHeight + columnSelectorHeight;
+            const headerRow = document.querySelector('thead tr:last-child');
+            const tableHeaders = headerRow ? headerRow.querySelectorAll('th') : [];
+            
+            if (tableHeaders.length > 0) {
+                tableHeaders.forEach(th => {
+                    // Clear any existing top/position styles first
+                    th.style.removeProperty('top');
+                    th.style.removeProperty('position');
+                    // Apply new styles with !important
+                    th.style.setProperty('position', 'sticky', 'important');
+                    th.style.setProperty('top', totalTop + 'px', 'important');
+                    th.style.setProperty('z-index', '98', 'important');
+                });
+                console.log('Applied top:', totalTop, 'px to', tableHeaders.length, 'table headers');
+            } else {
+                console.log('No table headers found');
+            }
+            
+            console.log('Sticky positions updated - Criteria:', criteriaHeight, 'px, Column Selector:', columnSelectorHeight, 'px, Total Top:', totalTop, 'px');
+        }
+
+        // Setup auto-apply criteria with debouncing
+        function setupAutoApplyCriteria() {
+            // Debounce function to limit how often applyCriteria is called
+            let criteriaTimeout = null;
+            function debouncedApplyCriteria() {
+                clearTimeout(criteriaTimeout);
+                criteriaTimeout = setTimeout(() => {
+                    // Refresh table to update Low Price Range Top values when criterion 2 changes
+                    displayTable();
+                    // Apply criteria highlighting after table is rendered
+                    setTimeout(() => applyCriteria(), 10);
+                }, 300); // Wait 300ms after user stops typing
+            }
+
+            // Auto-apply criteria as user types
+            document.getElementById('criterion1').addEventListener('input', debouncedApplyCriteria);
+            document.getElementById('criterion2').addEventListener('input', debouncedApplyCriteria);
+            document.getElementById('criterion3').addEventListener('input', debouncedApplyCriteria);
+
+            // Also apply immediately on Enter key
+            document.getElementById('criterion1').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    clearTimeout(criteriaTimeout);
+                    displayTable();
+                    setTimeout(() => applyCriteria(), 10);
+                }
+            });
+
+            document.getElementById('criterion2').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    clearTimeout(criteriaTimeout);
+                    displayTable(); // Refresh table to update Low Price Range Top values
+                    setTimeout(() => applyCriteria(), 10);
+                }
+            });
+
+            document.getElementById('criterion3').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    clearTimeout(criteriaTimeout);
+                    displayTable();
+                    setTimeout(() => applyCriteria(), 10);
+                }
+            });
+        }
+
+        // Ticker Management
+        function addTicker() {
+            const input = document.getElementById('tickerInput');
+            const ticker = input.value.trim().toUpperCase();
+            
+            if (!ticker) {
+                showMessage('Please enter a ticker symbol', 'error');
+                return;
+            }
+
+            if (tickers.includes(ticker)) {
+                showMessage('Ticker already exists', 'error');
+                return;
+            }
+
+            tickers.push(ticker);
+            input.value = '';
+            saveTickers();
+            updateTickerList();
+        }
+
+        function deleteTicker(ticker) {
+            tickers = tickers.filter(t => t !== ticker);
+            delete stockData[ticker];
+            saveTickers();
+            saveStockData();
+            updateTickerList();
+            displayTable();
+        }
+
+        function updateTickerList() {
+            const list = document.getElementById('tickerList');
+            list.innerHTML = '';
+            tickers.forEach((ticker, index) => {
+                const item = document.createElement('div');
+                item.className = 'ticker-item';
+                const upDisabled = index === 0 ? 'disabled' : '';
+                const downDisabled = index === tickers.length - 1 ? 'disabled' : '';
+                item.innerHTML = `
+                    <span class="ticker-symbol">${ticker}</span> 
+                    <button class="move-btn" onclick="moveTickerUp(${index})" ${upDisabled} title="Move up">▲</button>
+                    <button class="move-btn" onclick="moveTickerDown(${index})" ${downDisabled} title="Move down">▼</button>
+                    <button class="delete-btn" onclick="deleteTicker('${ticker}')" title="Delete">x</button>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        function moveTickerUp(index) {
+            if (index === 0) return;
+            [tickers[index - 1], tickers[index]] = [tickers[index], tickers[index - 1]];
+            saveTickers();
+            updateTickerList();
+            displayTable();
+        }
+
+        function moveTickerDown(index) {
+            if (index === tickers.length - 1) return;
+            [tickers[index], tickers[index + 1]] = [tickers[index + 1], tickers[index]];
+            saveTickers();
+            updateTickerList();
+            displayTable();
+        }
+
+        function saveTickers() {
+            try {
+                if (!isLocalStorageAvailable()) {
+                    console.error('localStorage is not available');
+                    showMessage('Warning: localStorage is not available. Data will not persist.', 'error');
+                    return;
+                }
+                localStorage.setItem('stockTickers', JSON.stringify(tickers));
+                console.log('Tickers saved:', tickers.length);
+                updateStorageInfo();
+            } catch (error) {
+                console.error('Error saving tickers:', error);
+                if (error.name === 'QuotaExceededError') {
+                    showMessage('Error: Browser storage quota exceeded. Please clear some space.', 'error');
+                } else {
+                    showMessage('Error saving tickers: ' + error.message, 'error');
+                }
+            }
+        }
+
+        function loadTickers() {
+            try {
+                if (!isLocalStorageAvailable()) {
+                    console.warn('localStorage is not available');
+                    showMessage('Warning: localStorage is not available. Data cannot be loaded.', 'error');
+                    return;
+                }
+                
+                const saved = localStorage.getItem('stockTickers');
+                if (saved) {
+                    tickers = JSON.parse(saved);
+                    console.log('Tickers loaded:', tickers.length, tickers);
+                    updateTickerList();
+                } else {
+                    console.log('No saved tickers found in localStorage');
+                }
+                loadStockData();
+                displayTable();
+                updateStorageInfo();
+            } catch (error) {
+                console.error('Error loading tickers:', error);
+                showMessage('Error loading tickers: ' + error.message, 'error');
+            }
+        }
+
+        function isLocalStorageAvailable() {
+            try {
+                const test = '__localStorage_test__';
+                localStorage.setItem(test, test);
+                localStorage.removeItem(test);
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function updateStorageInfo() {
+            const infoDiv = document.getElementById('storageInfo');
+            if (!infoDiv) return;
+            
+            try {
+                if (!isLocalStorageAvailable()) {
+                    infoDiv.innerHTML = '<span style="color: red;">⚠️ localStorage is not available</span>';
+                    return;
+                }
+                
+                const tickersSaved = localStorage.getItem('stockTickers');
+                const dataSaved = localStorage.getItem('stockData');
+                const tickerCount = tickersSaved ? JSON.parse(tickersSaved).length : 0;
+                const dataCount = dataSaved ? Object.keys(JSON.parse(dataSaved)).length : 0;
+                
+                // Calculate storage usage
+                let totalSize = 0;
+                for (let key in localStorage) {
+                    if (localStorage.hasOwnProperty(key)) {
+                        totalSize += localStorage[key].length + key.length;
+                    }
+                }
+                const sizeInMB = (totalSize / (1024 * 1024)).toFixed(2);
+                const maxSize = 5; // Most browsers allow ~5-10MB
+                const percentUsed = ((totalSize / (maxSize * 1024 * 1024)) * 100).toFixed(1);
+                
+                const origin = window.location.origin || window.location.protocol + '//' + window.location.host;
+                infoDiv.innerHTML = `
+                    <strong>Storage Status:</strong> ${tickerCount} tickers, ${dataCount} data entries | 
+                    Storage used: ${sizeInMB} MB (${percentUsed}%) | 
+                    Origin: ${origin}
+                `;
+            } catch (error) {
+                infoDiv.innerHTML = '<span style="color: red;">Error reading storage info</span>';
+            }
+        }
+
+        // Stock Data Management
+        async function fetchAllData() {
+            if (tickers.length === 0) {
+                showMessage('Please add at least one ticker', 'error');
+                return;
+            }
+
+            document.getElementById('tableLoading').style.display = 'block';
+            showMessage('Fetching data from Yahoo Finance for all tickers...', 'success');
+
+            let successCount = 0;
+            let errorCount = 0;
+
+            try {
+                for (const ticker of tickers) {
+                    try {
+                        // Add timeout wrapper to prevent hanging
+                        const timeoutPromise = new Promise((_, reject) => 
+                            setTimeout(() => reject(new Error('Request timeout after 15 seconds')), 15000)
+                        );
+                        
+                        await Promise.race([
+                            fetchStockDataFromYahoo(ticker),
+                            timeoutPromise
+                        ]);
+                        
+                        successCount++;
+                        console.log(`Successfully fetched data for ${ticker}`);
+                        // Update table after each successful fetch
+                        displayTable();
+                        // Add small delay to be respectful to Yahoo Finance servers
+                        if (tickers.indexOf(ticker) < tickers.length - 1) {
+                            await new Promise(resolve => setTimeout(resolve, 500)); // 500ms delay between requests
+                        }
+                    } catch (error) {
+                        errorCount++;
+                        console.error(`Error fetching data for ${ticker}:`, error);
+                        showMessage(`Error fetching data for ${ticker}: ${error.message}`, 'error');
+                        // Continue with next ticker even if one fails
+                    }
+                }
+            } finally {
+                // Always hide loading indicator, even if there's an error
+                document.getElementById('tableLoading').style.display = 'none';
+            }
+            
+            // After fetching historical data, also refresh current prices to get latest closing prices
+            console.log('Historical data fetched. Now refreshing current prices...');
+            showMessage('Refreshing current prices...', 'success');
+            
+            // Temporarily enable real-time flag to allow refreshCurrentPrices to run
+            const wasRealTimeActive = isRealTimeActive;
+            isRealTimeActive = true;
+            
+            try {
+                await refreshCurrentPrices(true); // Force refresh even if real-time is off
+            } catch (error) {
+                console.error('Error refreshing current prices:', error);
+            } finally {
+                // Restore original real-time state
+                isRealTimeActive = wasRealTimeActive;
+            }
+            
+            // Display table with current in-memory data (don't reload from localStorage)
+            console.log('Final stockData count:', Object.keys(stockData).length);
+            console.log('StockData keys:', Object.keys(stockData));
+            displayTable();
+            
+            // Update chart if we have data
+            if (Object.keys(stockData).length > 0) {
+                const firstTicker = Object.keys(stockData).sort()[0];
+                if (firstTicker && stockData[firstTicker]) {
+                    selectTickerForChart(firstTicker);
+                }
+            }
+            
+            if (successCount > 0) {
+                showMessage(`Data fetch completed! Successfully fetched ${successCount} ticker(s)${errorCount > 0 ? `, ${errorCount} error(s)` : ''}. Found ${Object.keys(stockData).length} tickers in memory.`, 'success');
+            } else {
+                showMessage('Failed to fetch data. Please check your API key and try again.', 'error');
+            }
+        }
+
+        async function fetchStockDataFromYahoo(ticker) {
+            // Yahoo Finance API endpoint for 1 year of daily data
+            // Using CORS proxy to bypass CORS restrictions
+            const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1y`;
+            
+            // Try multiple CORS proxy options
+            const proxyOptions = [
+                `https://api.allorigins.win/raw?url=${encodeURIComponent(yahooUrl)}`,
+                `https://corsproxy.io/?${encodeURIComponent(yahooUrl)}`,
+                yahooUrl // Try direct as fallback
+            ];
+            
+            let response = null;
+            let lastError = null;
+            
+            // Try each proxy option until one works
+            for (const proxyUrl of proxyOptions) {
+                try {
+                    console.log(`Trying to fetch ${ticker} via: ${proxyUrl.substring(0, 50)}...`);
+                    
+                    // Add timeout to prevent hanging (15 seconds per proxy attempt)
+                    const timeoutPromise = new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error('Request timeout')), 15000)
+                    );
+                    
+                    response = await Promise.race([
+                        fetch(proxyUrl, {
+                            method: 'GET',
+                            headers: {
+                                'Accept': 'application/json',
+                            },
+                            mode: 'cors'
+                        }),
+                        timeoutPromise
+                    ]);
+                    
+                    if (response.ok) {
+                        break; // Success, exit loop
+                    }
+                } catch (error) {
+                    console.log(`Proxy attempt failed: ${error.message}`);
+                    lastError = error;
+                    continue; // Try next proxy
+                }
+            }
+            
+            if (!response || !response.ok) {
+                throw new Error(`Failed to fetch data: ${lastError ? lastError.message : 'HTTP error! status: ' + (response ? response.status : 'unknown')}`);
+            }
+            
+            try {
+                // Add timeout for JSON parsing as well (5 seconds)
+                const jsonTimeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('JSON parsing timeout')), 5000)
+                );
+                
+                const data = await Promise.race([
+                    response.json(),
+                    jsonTimeoutPromise
+                ]);
+                
+                console.log(`Yahoo Finance response for ${ticker}:`, data);
+
+                if (!data.chart || !data.chart.result || data.chart.result.length === 0) {
+                    throw new Error('No data available for this ticker. Check if ticker symbol is correct.');
+                }
+
+                const result = data.chart.result[0];
+                
+                if (!result.timestamp || !result.indicators || !result.indicators.quote) {
+                    throw new Error('Invalid data format from Yahoo Finance');
+                }
+                
+                // Extract company name from meta data
+                const companyName = result.meta?.longName || result.meta?.shortName || result.meta?.symbol || ticker;
+
+                // Get change percent directly from Yahoo Finance meta data (no calculations)
+                // Use regularMarketChangePercent as-is from Yahoo Finance
+                const changePercentFromMeta = result.meta?.regularMarketChangePercent || null;
+
+                const timestamps = result.timestamp;
+                const quote = result.indicators.quote[0];
+                const closes = quote.close;
+                const opens = quote.open;
+                const highs = quote.high;
+                const lows = quote.low;
+                const quoteVolumes = quote.volume;
+
+                // Filter out null values and get valid data points
+                const validData = [];
+                for (let i = 0; i < timestamps.length; i++) {
+                    if (closes[i] !== null && closes[i] !== undefined) {
+                        validData.push({
+                            timestamp: timestamps[i],
+                            date: new Date(timestamps[i] * 1000).toISOString().split('T')[0],
+                            open: opens[i] || closes[i],
+                            high: highs[i] || closes[i],
+                            low: lows[i] || closes[i],
+                            close: closes[i],
+                            volume: quoteVolumes[i] || 0
+                        });
+                    }
+                }
+
+                if (validData.length === 0) {
+                    throw new Error('No valid price data found for this ticker');
+                }
+
+                // Get last 12 months of data
+                const oneYearAgo = new Date();
+                oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+                
+                const recentData = validData.filter(item => new Date(item.timestamp * 1000) >= oneYearAgo);
+                
+                // If we have less than 12 months, use all available data
+                const dataToUse = recentData.length > 0 ? recentData : validData;
+
+                // Calculate metrics
+                const prices = dataToUse.map(item => item.close);
+                const dailyHighs = dataToUse.map(item => item.high);
+                const dailyLows = dataToUse.map(item => item.low);
+                const volumes = dataToUse.map(item => item.volume);
+                
+                const currentPrice = prices[prices.length - 1];
+                
+                // Get 90-day data (approximately 63 trading days)
+                // Use intraday highs and lows instead of closing prices
+                const tradingDays90 = Math.min(63, dataToUse.length);
+                const data90 = dataToUse.slice(-tradingDays90);
+                const highs90 = dailyHighs.slice(-tradingDays90);
+                const lows90 = dailyLows.slice(-tradingDays90);
+                const low90 = Math.min(...lows90);  // Lowest intraday low in 90 days
+                const high90 = Math.max(...highs90); // Highest intraday high in 90 days
+                
+                // Find the dates where the 90-day high and low occurred
+                let low90Date = null;
+                let high90Date = null;
+                for (let i = 0; i < data90.length; i++) {
+                    if (Math.abs(data90[i].low - low90) < 0.01) {
+                        low90Date = data90[i].date;
+                    }
+                    if (Math.abs(data90[i].high - high90) < 0.01) {
+                        high90Date = data90[i].date;
+                    }
+                    if (low90Date && high90Date) break;
+                }
+                
+                // Store previous close for calculating change percent during real-time updates
+                const previousClose = result.meta?.regularMarketPreviousClose || null;
+                
+                // Calculate change percent if not available from meta
+                // Use currentPrice and previousClose to calculate change percent
+                let changePercent = changePercentFromMeta;
+                if ((changePercent === null || changePercent === undefined) && currentPrice !== null && previousClose !== null && previousClose !== 0) {
+                    // Calculate change percent: ((current - previous) / previous) * 100
+                    changePercent = ((currentPrice - previousClose) / previousClose) * 100;
+                    console.log(`${ticker}: Calculated changePercent: ${changePercent.toFixed(2)}% (from currentPrice: $${currentPrice.toFixed(2)}, previousClose: $${previousClose.toFixed(2)})`);
+                } else if (changePercent === null || changePercent === undefined) {
+                    console.warn(`${ticker}: changePercent not available from Yahoo Finance meta data and cannot be calculated (currentPrice: ${currentPrice}, previousClose: ${previousClose})`);
+                }
+                
+                // Create timeSeries object for compatibility
+                const timeSeries = {};
+                const dates = [];
+                dataToUse.forEach(item => {
+                    timeSeries[item.date] = {
+                        '1. open': item.open.toString(),
+                        '2. high': item.high.toString(),
+                        '3. low': item.low.toString(),
+                        '4. close': item.close.toString(),
+                        '6. volume': item.volume.toString()
+                    };
+                    dates.push(item.date);
+                });
+                
+                stockData[ticker] = {
+                    ticker: ticker,
+                    companyName: companyName,  // Full company name for tooltip
+                    currentPrice: currentPrice,
+                    previousClose: previousClose,  // Store previous close for real-time change % calculation
+                    low90: low90,
+                    high90: high90,
+                    low90Date: low90Date,  // Date when 90-day low occurred
+                    high90Date: high90Date, // Date when 90-day high occurred
+                    changePercent: changePercent,
+                    timeSeries: timeSeries,
+                    dates: dates,
+                    prices: prices,  // Closing prices
+                    dailyHighs: dailyHighs,  // Intraday highs for each day
+                    dailyLows: dailyLows     // Intraday lows for each day
+                };
+
+                console.log(`Data stored in memory for ${ticker}:`, {
+                    currentPrice,
+                    changePercent,
+                    low90,
+                    high90,
+                    dataPoints: prices.length
+                });
+
+                // Save after each ticker to ensure progress is saved
+                saveStockData();
+                
+                // Verify data was saved
+                const saved = localStorage.getItem('stockData');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (parsed[ticker]) {
+                        console.log(`✓ Verified: Data for ${ticker} saved to localStorage`);
+                    } else {
+                        console.error(`✗ Warning: Data for ${ticker} not found in localStorage after save`);
+                    }
+                } else {
+                    console.error(`✗ Warning: No data in localStorage after saving ${ticker}`);
+                }
+            } catch (error) {
+                console.error(`Error fetching ${ticker} from Yahoo Finance:`, error);
+                // Provide helpful error message
+                if (error.message.includes('CORS') || error.message.includes('Failed to fetch')) {
+                    const isFileProtocol = window.location.protocol === 'file:';
+                    const errorMsg = isFileProtocol 
+                        ? `CORS error: This app must be run through a web server. See README-CHROMEBOOK.md for setup instructions. For Chromebooks, use the "Web Server for Chrome" extension.`
+                        : `CORS error: Unable to fetch data from Yahoo Finance. Make sure you're accessing via http://localhost (not file://). See README-CHROMEBOOK.md for help.`;
+                    throw new Error(errorMsg);
+                }
+                throw error;
+            }
+        }
+
+        function saveStockData() {
+            try {
+                // Store only essential data in localStorage (exclude large timeSeries object)
+                const dataToStore = {};
+                Object.keys(stockData).forEach(ticker => {
+                    dataToStore[ticker] = {
+                        ticker: stockData[ticker].ticker,
+                        companyName: stockData[ticker].companyName,  // Save company name
+                        currentPrice: stockData[ticker].currentPrice,
+                        low90: stockData[ticker].low90,
+                        high90: stockData[ticker].high90,
+                        low90Date: stockData[ticker].low90Date,
+                        high90Date: stockData[ticker].high90Date,
+                        changePercent: stockData[ticker].changePercent,
+                        // Only save dates and prices for charting, not the full timeSeries object
+                        dates: stockData[ticker].dates,
+                        prices: stockData[ticker].prices,
+                        dailyHighs: stockData[ticker].dailyHighs,  // Intraday highs for short-term charts
+                        dailyLows: stockData[ticker].dailyLows    // Intraday lows for short-term charts
+                    };
+                });
+                
+                const jsonString = JSON.stringify(dataToStore);
+                const sizeInMB = new Blob([jsonString]).size / (1024 * 1024);
+                console.log(`Saving stock data: ${Object.keys(dataToStore).length} tickers, ${sizeInMB.toFixed(2)} MB`);
+                
+                localStorage.setItem('stockData', jsonString);
+                console.log('Stock data saved successfully');
+                updateStorageInfo();
+            } catch (error) {
+                if (error.name === 'QuotaExceededError' || error.code === 22) {
+                    console.error('localStorage quota exceeded. Data is too large.');
+                    showMessage('Warning: Data is too large to save locally. Some data may not persist.', 'error');
+                    // Try saving without prices array to reduce size
+                    try {
+                        const dataToStore = {};
+                        Object.keys(stockData).forEach(ticker => {
+                            dataToStore[ticker] = {
+                                ticker: stockData[ticker].ticker,
+                                companyName: stockData[ticker].companyName,  // Save company name
+                                currentPrice: stockData[ticker].currentPrice,
+                                low90: stockData[ticker].low90,
+                                high90: stockData[ticker].high90,
+                                changePercent: stockData[ticker].changePercent
+                            };
+                        });
+                        localStorage.setItem('stockData', JSON.stringify(dataToStore));
+                        console.log('Saved minimal data (without price history)');
+                    } catch (e) {
+                        console.error('Failed to save even minimal data:', e);
+                    }
+                } else {
+                    console.error('Error saving stock data:', error);
+                    throw error;
+                }
+            }
+        }
+
+        function loadStockData() {
+            try {
+                if (!isLocalStorageAvailable()) {
+                    console.warn('localStorage is not available');
+                    stockData = {};
+                    return;
+                }
+                
+                const saved = localStorage.getItem('stockData');
+                if (saved) {
+                    try {
+                        stockData = JSON.parse(saved);
+                        console.log('Loaded stock data:', Object.keys(stockData).length, 'tickers');
+                        console.log('Loaded tickers:', Object.keys(stockData));
+                        
+                        // Verify the data structure
+                        Object.keys(stockData).forEach(ticker => {
+                            if (!stockData[ticker].currentPrice) {
+                                console.warn(`Incomplete data for ${ticker}`);
+                            }
+                            if (!stockData[ticker].dailyHighs || !stockData[ticker].dailyLows) {
+                                console.warn(`Missing intraday data (dailyHighs/dailyLows) for ${ticker}. Re-fetch data to enable intraday charts for 3, 5, and 10-day views.`);
+                            }
+                        });
+                    } catch (e) {
+                        console.error('Error parsing stock data:', e);
+                        console.error('Raw saved data (first 500 chars):', saved.substring(0, 500));
+                        stockData = {};
+                        showMessage('Error loading saved data. It may be corrupted.', 'error');
+                    }
+                } else {
+                    console.log('No saved stock data found in localStorage');
+                    console.log('Current origin:', window.location.origin || window.location.protocol + '//' + window.location.host);
+                    stockData = {};
+                }
+            } catch (error) {
+                console.error('Error loading stock data:', error);
+                stockData = {};
+            }
+        }
+
+        // Finnhub API Configuration
+        // Get your free API key from: https://finnhub.io/register
+        // Free tier: 60 API calls per minute
+        let FINNHUB_API_KEY = localStorage.getItem('finnhub_api_key') || '';
+        
+        // Function to set Finnhub API key (call from browser console: setFinnhubApiKey("your_key_here"))
+        function setFinnhubApiKey(key) {
+            FINNHUB_API_KEY = key;
+            localStorage.setItem('finnhub_api_key', key);
+            console.log('Finnhub API key saved');
+            showMessage('Finnhub API key saved successfully!', 'success');
+        }
+        
+        // Check if Finnhub API key is set on page load
+        if (!FINNHUB_API_KEY) {
+            console.warn('Finnhub API key not set. Get a free key from: https://finnhub.io/register');
+            console.warn('You can set it in the browser console: setFinnhubApiKey("your_key_here")');
+        }
+        
+        // Finnhub API Functions
+        // Fetch current price and change percent from Finnhub
+        async function fetchCurrentPriceFromFinnhub(ticker) {
+            if (!FINNHUB_API_KEY) {
+                throw new Error('Finnhub API key not set');
+            }
+            
+            try {
+                // Finnhub quote endpoint - returns current/closing price and change percent
+                // After market close, 'c' should be the closing price (may take a few minutes to finalize)
+                // Note: Daily candles endpoint requires paid plan, so we use quote endpoint only
+                const url = `https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${FINNHUB_API_KEY}`;
+                
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    if (response.status === 429) {
+                        throw new Error('Finnhub rate limit exceeded (60 calls/minute)');
+                    }
+                    throw new Error(`Finnhub API error: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // Finnhub returns: { c: current/closing price, d: change, dp: change percent, h: high, l: low, o: open, pc: previous close, t: timestamp }
+                // After market close, 'c' should be the closing price (may take a few minutes to finalize after 4:00 PM ET)
+                const currentPrice = data.c || null; // Current/closing price
+                const changePercent = data.dp || null; // Change percent (already in percentage form)
+                const previousClose = data.pc || null; // Previous close
+                const timestamp = data.t || null; // Unix timestamp of the price
+                
+                // Log what we got from Finnhub with full details
+                if (currentPrice !== null) {
+                    const timeStr = timestamp ? new Date(timestamp * 1000).toLocaleTimeString() : 'unknown';
+                    console.log(`${ticker}: Finnhub - Price: $${currentPrice.toFixed(2)}, Change: ${changePercent?.toFixed(2)}%, Time: ${timeStr}, High: $${data.h?.toFixed(2) || 'N/A'}, Low: $${data.l?.toFixed(2) || 'N/A'}, PrevClose: $${previousClose?.toFixed(2) || 'N/A'}`);
+                } else {
+                    console.warn(`${ticker}: Finnhub returned null price`, data);
+                }
+                
+                return { currentPrice, changePercent, previousClose, dataTimestamp: timestamp ? new Date(timestamp * 1000) : null };
+            } catch (error) {
+                console.error(`Finnhub error for ${ticker}:`, error.message);
+                throw error;
+            }
+        }
+        
+        // Batch fetch from Finnhub (can fetch multiple tickers)
+        // Process sequentially to avoid rate limiting (60 calls/minute = 1 call/second)
+        async function fetchCurrentPricesBatchFromFinnhub(tickers) {
+            if (!FINNHUB_API_KEY) {
+                return {}; // Return empty if no API key
+            }
+            
+            const results = {};
+            // Finnhub free tier: 60 calls/minute = 1 call per second
+            // Process sequentially with 1.5 second delay between each ticker to stay safely under limit
+            // Use 1.5 seconds = 40 calls/minute (safe margin)
+            
+            // Add initial delay to ensure we're not starting right after a rate limit
+            // If we just hit a rate limit, wait for it to reset (60 seconds)
+            console.log('Waiting 5 seconds before starting Finnhub requests (to avoid rate limits)...');
+            await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds before starting
+            
+            for (let i = 0; i < tickers.length; i++) {
+                const ticker = tickers[i];
+                
+                // Add delay between requests to respect rate limit (1.5 seconds = 40 calls/minute, safe margin)
+                if (i > 0) {
+                    await new Promise(resolve => setTimeout(resolve, 1500)); // 1.5 seconds between requests
+                }
+                
+                let retries = 0;
+                const maxRetries = 2;
+                
+                while (retries <= maxRetries) {
+                    try {
+                        const data = await fetchCurrentPriceFromFinnhub(ticker);
+                        if (data && data.currentPrice !== null) {
+                            results[ticker] = data;
+                            break; // Success, move to next ticker
+                        }
+                    } catch (error) {
+                        if (error.message.includes('rate limit') && retries < maxRetries) {
+                            // Rate limited - wait longer before retrying (wait for rate limit window to reset)
+                            const waitTime = (retries + 1) * 30; // 30s, 60s (wait for rate limit window to reset)
+                            console.warn(`${ticker}: Rate limited, waiting ${waitTime} seconds before retry ${retries + 1}/${maxRetries}...`);
+                            await new Promise(resolve => setTimeout(resolve, waitTime * 1000));
+                            retries++;
+                        } else {
+                            // Other error or max retries reached
+                            console.warn(`${ticker}: Finnhub fetch failed: ${error.message}`);
+                            break; // Move to next ticker
+                        }
+                    }
+                }
+                
+                // Log progress
+                if ((i + 1) % 10 === 0 || i === tickers.length - 1) {
+                    console.log(`Finnhub progress: ${i + 1}/${tickers.length} tickers processed`);
+                }
+            }
+            
+            return results;
+        }
+
+        // Helper function to fetch data with retries (shared by both batch and individual fetches)
+        // Try local proxy server first, then fallback to public proxies
+        async function fetchWithProxies(url, retryCount = 0) {
+            // Try local proxy server first (if running on port 3000)
+            const localProxyUrl = `http://localhost:3000/?url=${encodeURIComponent(url)}`;
+            
+            // Use multiple proxy options with better fallbacks
+            const proxyOptions = [
+                localProxyUrl,  // Local proxy server (no CORS issues)
+                `https://corsproxy.io/?${encodeURIComponent(url)}`,
+                `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
+            ];
+            
+            // On retry, skip local proxy (it already failed)
+            const startIndex = retryCount > 0 ? 1 : 0;
+            
+            let response = null;
+            let lastError = null;
+            let lastStatus = null;
+            
+            for (let i = startIndex; i < proxyOptions.length; i++) {
+                const proxyUrl = proxyOptions[i];
+                const isLocalProxy = proxyUrl.includes('localhost:3000');
+                
+                try {
+                    // Use minimal headers to avoid preflight requests
+                    // Shorter timeout for local proxy (2 seconds) to fail faster, longer for public proxies (5 seconds)
+                    const timeout = isLocalProxy ? 2000 : 5000;
+                    const timeoutPromise = new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error('Request timeout')), timeout)
+                    );
+                    
+                    response = await Promise.race([
+                        fetch(proxyUrl, {
+                            method: 'GET',
+                            headers: {
+                                'Accept': 'application/json',
+                            },
+                            mode: 'cors'
+                        }),
+                        timeoutPromise
+                    ]);
+                    
+                    if (response.ok) {
+                        // Handle rate limiting and server errors
+                        if (response.status === 429) {
+                            // Rate limited - if all proxies are getting 429, Yahoo Finance has rate-limited us
+                            // Don't try other proxies, they'll all fail. Return error immediately.
+                            lastStatus = response.status;
+                            console.warn(`Rate limited (429) by Yahoo Finance - all proxies will fail. Need to wait longer.`);
+                            // Don't continue to next proxy - they'll all be rate limited
+                            break;
+                        } else if (response.status === 408 || response.status === 502 || response.status === 503 || response.status === 520 || response.status === 522) {
+                            lastStatus = response.status;
+                            await new Promise(resolve => setTimeout(resolve, 1000));
+                            continue;
+                        }
+                        
+                        // Success!
+                        break;
+                    } else {
+                        lastStatus = response.status;
+                    }
+                } catch (error) {
+                    if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+                        // CORS error - try next proxy
+                        lastStatus = 'CORS_ERROR';
+                        lastError = error;
+                    } else if (error.message && (error.message.includes('Failed to fetch') || error.message.includes('NetworkError') || error.message.includes('ERR_CONNECTION_REFUSED'))) {
+                        // Connection error - if it's the local proxy, log helpful message once
+                        if (isLocalProxy && i === 0) {
+                            console.warn('Local proxy server not running. Falling back to public proxies. To use local proxy, start it with: node proxy-server.js or double-click start-proxy-server.bat');
+                        }
+                        lastStatus = 'NETWORK_ERROR';
+                        lastError = error;
+                    } else {
+                        lastError = error;
+                        lastStatus = error.status || 'network error';
+                    }
+                    // Continue to next proxy on any error (don't wait, try next immediately)
+                    continue;
+                }
+            }
+            
+            // If we got rate limited, wait much longer before retrying
+            if (lastStatus === 429 && retryCount < 1) {
+                // If rate limited, wait 30 seconds before retrying (Yahoo Finance rate limits can be strict)
+                const backoffDelay = 30000; // 30 seconds
+                console.warn(`Rate limited by Yahoo Finance - waiting ${backoffDelay/1000} seconds before retry. This may take a while...`);
+                await new Promise(resolve => setTimeout(resolve, backoffDelay));
+                // On retry, skip local proxy and start with public proxies
+                return fetchWithProxies(url, retryCount + 1);
+            } else if ((lastStatus === 408 || lastStatus === 502 || lastStatus === 503 || lastStatus === 520 || lastStatus === 522) && retryCount < 1) {
+                const backoffDelay = 3000; // 3 second delay
+                await new Promise(resolve => setTimeout(resolve, backoffDelay));
+                return fetchWithProxies(url, retryCount + 1);
+            }
+            
+            if (!response || !response.ok) {
+                const errorMsg = lastStatus === 429 
+                    ? 'Rate limited by proxy service'
+                    : lastStatus === 408 || lastStatus === 502 || lastStatus === 503 || lastStatus === 520 || lastStatus === 522
+                    ? 'Proxy service temporarily unavailable'
+                    : `Failed to fetch: ${lastError ? lastError.message : 'HTTP error ' + (lastStatus || 'unknown')}`;
+                throw new Error(errorMsg);
+            }
+            
+            return response.json();
+        }
+
+        // Helper function to fetch data with retries (shared by both batch and individual fetches)
+        // Try local proxy server first, then fallback to public proxies
+        async function fetchWithProxies(url, retryCount = 0) {
+            // Try local proxy server first (if running on port 3000)
+            const localProxyUrl = `http://localhost:3000/?url=${encodeURIComponent(url)}`;
+            
+            // Use multiple proxy options with better fallbacks
+            const proxyOptions = [
+                localProxyUrl,  // Local proxy server (no CORS issues)
+                `https://corsproxy.io/?${encodeURIComponent(url)}`,
+                `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
+            ];
+            
+            // On retry, skip local proxy (it already failed)
+            const startIndex = retryCount > 0 ? 1 : 0;
+            
+            let response = null;
+            let lastError = null;
+            let lastStatus = null;
+            
+            for (let i = startIndex; i < proxyOptions.length; i++) {
+                const proxyUrl = proxyOptions[i];
+                const isLocalProxy = proxyUrl.includes('localhost:3000');
+                
+                try {
+                    // Use minimal headers to avoid preflight requests
+                    // Shorter timeout for local proxy (2 seconds) to fail faster, longer for public proxies (5 seconds)
+                    const timeout = isLocalProxy ? 2000 : 5000;
+                    const timeoutPromise = new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error('Request timeout')), timeout)
+                    );
+                    
+                    response = await Promise.race([
+                        fetch(proxyUrl, {
+                            method: 'GET',
+                            headers: {
+                                'Accept': 'application/json',
+                            },
+                            mode: 'cors'
+                        }),
+                        timeoutPromise
+                    ]);
+                    
+                    if (response.ok) {
+                        // Handle rate limiting and server errors
+                        if (response.status === 429) {
+                            // Rate limited - if all proxies are getting 429, Yahoo Finance has rate-limited us
+                            // Don't try other proxies, they'll all fail. Return error immediately.
+                            lastStatus = response.status;
+                            console.warn(`Rate limited (429) by Yahoo Finance - all proxies will fail. Need to wait longer.`);
+                            // Don't continue to next proxy - they'll all be rate limited
+                            break;
+                        } else if (response.status === 408 || response.status === 502 || response.status === 503 || response.status === 520 || response.status === 522) {
+                            lastStatus = response.status;
+                            await new Promise(resolve => setTimeout(resolve, 1000));
+                            continue;
+                        }
+                        
+                        // Success!
+                        break;
+                    } else {
+                        lastStatus = response.status;
+                    }
+                } catch (error) {
+                    if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+                        // CORS error - try next proxy
+                        lastStatus = 'CORS_ERROR';
+                        lastError = error;
+                    } else if (error.message && (error.message.includes('Failed to fetch') || error.message.includes('NetworkError') || error.message.includes('ERR_CONNECTION_REFUSED'))) {
+                        // Connection error - if it's the local proxy, log helpful message once
+                        if (isLocalProxy && i === 0) {
+                            console.warn('Local proxy server not running. Falling back to public proxies. To use local proxy, start it with: node proxy-server.js or double-click start-proxy-server.bat');
+                        }
+                        lastStatus = 'NETWORK_ERROR';
+                        lastError = error;
+                    } else {
+                        lastError = error;
+                        lastStatus = error.status || 'network error';
+                    }
+                    // Continue to next proxy on any error (don't wait, try next immediately)
+                    continue;
+                }
+            }
+            
+            // If we got rate limited, wait much longer before retrying
+            if (lastStatus === 429 && retryCount < 1) {
+                // If rate limited, wait 30 seconds before retrying (Yahoo Finance rate limits can be strict)
+                const backoffDelay = 30000; // 30 seconds
+                console.warn(`Rate limited by Yahoo Finance - waiting ${backoffDelay/1000} seconds before retry. This may take a while...`);
+                await new Promise(resolve => setTimeout(resolve, backoffDelay));
+                // On retry, skip local proxy and start with public proxies
+                return fetchWithProxies(url, retryCount + 1);
+            } else if ((lastStatus === 408 || lastStatus === 502 || lastStatus === 503 || lastStatus === 520 || lastStatus === 522) && retryCount < 1) {
+                const backoffDelay = 3000; // 3 second delay
+                await new Promise(resolve => setTimeout(resolve, backoffDelay));
+                return fetchWithProxies(url, retryCount + 1);
+            }
+            
+            if (!response || !response.ok) {
+                const errorMsg = lastStatus === 429 
+                    ? 'Rate limited by proxy service'
+                    : lastStatus === 408 || lastStatus === 502 || lastStatus === 503 || lastStatus === 520 || lastStatus === 522
+                    ? 'Proxy service temporarily unavailable'
+                    : `Failed to fetch: ${lastError ? lastError.message : 'HTTP error ' + (lastStatus || 'unknown')}`;
+                throw new Error(errorMsg);
+            }
+            
+            return response.json();
+        }
+
+        // Real-Time Price Updates
+        // Strategy: Use Yahoo Finance quote endpoint (v7) instead of chart endpoint (v8)
+        // The quote endpoint is lighter and may have different/better rate limits
+        async function fetchCurrentPricesBatch(tickers) {
+            // Use quote endpoint which is designed for quick quotes
+            // Can handle more tickers at once (up to 50)
+            const BATCH_SIZE = 20; // Increased since quote endpoint is lighter
+            const results = {};
+            
+            for (let i = 0; i < tickers.length; i += BATCH_SIZE) {
+                const batch = tickers.slice(i, i + BATCH_SIZE);
+                const timestamp = Date.now();
+                
+                // Use quote endpoint instead of chart endpoint - lighter and faster
+                // Format: /v7/finance/quote?symbols=AAPL,MSFT,GOOGL
+                const tickersString = batch.join(',');
+                const batchUrl = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${tickersString}&_=${timestamp}`;
+                
+                try {
+                    // Add delay before each batch to be respectful
+                    if (i > 0) {
+                        await new Promise(resolve => setTimeout(resolve, 3000)); // 3 second delay between batches
+                    }
+                    
+                    const dailyData = await fetchWithProxies(batchUrl).catch(e => {
+                        console.error(`Failed to fetch batch data for ${batch.length} tickers:`, e.message);
+                        return null;
+                    });
+                    
+                    // Quote endpoint returns data in quoteResponse.result array
+                    if (!dailyData || !dailyData.quoteResponse || !dailyData.quoteResponse.result) {
+                        // This batch failed, continue to next batch
+                        continue;
+                    }
+                    
+                    // Process quote response - it returns an array of quote objects
+                    dailyData.quoteResponse.result.forEach((quote) => {
+                        const ticker = quote.symbol;
+                        if (!ticker || !quote) return;
+                        
+                        // Extract data from quote object (different structure than chart endpoint)
+                        let currentPrice = quote.regularMarketPrice || null;
+                        let changePercent = quote.regularMarketChangePercent || null;
+                        let previousClose = quote.regularMarketPreviousClose || null;
+                        
+                        // Convert changePercent from decimal to percentage if needed
+                        // (e.g., 0.05 = 5%, but Yahoo might return it as 5 already)
+                        if (changePercent !== null && Math.abs(changePercent) < 1) {
+                            changePercent = changePercent * 100;
+                        }
+                        
+                        results[ticker] = { currentPrice, changePercent, previousClose, dataTimestamp: null };
+                    });
+                } catch (error) {
+                    console.error(`Error in fetchCurrentPricesBatch for batch ${Math.floor(i/BATCH_SIZE) + 1}:`, error);
+                    // Continue to next batch even if this one failed
+                    continue;
+                }
+            }
+            
+            return results;
+        }
+        
+        // Fallback: Single ticker fetch (for when batching fails)
+        // Try quote endpoint first (lighter), then fall back to chart endpoint
+        async function fetchCurrentPrice(ticker, retryCount = 0) {
+            // Add cache-busting timestamp to ensure fresh data
+            const timestamp = Date.now();
+            
+            // Try quote endpoint first (lighter and faster)
+            const quoteUrl = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${ticker}&_=${timestamp}`;
+            
+            // Fallback to chart endpoint if quote endpoint fails
+            const chartUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=2m&range=1d&_=${timestamp}`;
+            
+            try {
+                // Try quote endpoint first
+                const quoteData = await fetchWithProxies(quoteUrl).catch(e => {
+                    console.log(`${ticker}: Quote endpoint failed, trying chart endpoint...`);
+                    return null;
+                });
+                
+                if (quoteData && quoteData.quoteResponse && quoteData.quoteResponse.result && quoteData.quoteResponse.result.length > 0) {
+                    const quote = quoteData.quoteResponse.result[0];
+                    let currentPrice = quote.regularMarketPrice || null;
+                    let changePercent = quote.regularMarketChangePercent || null;
+                    let previousClose = quote.regularMarketPreviousClose || null;
+                    
+                    // Convert changePercent from decimal to percentage if needed
+                    if (changePercent !== null && Math.abs(changePercent) < 1) {
+                        changePercent = changePercent * 100;
+                    }
+                    
+                    return { currentPrice, changePercent, previousClose, dataTimestamp: null };
+                }
+                
+                // Fallback to chart endpoint if quote endpoint didn't work
+                // Add initial delay to avoid hitting rate limits immediately
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                // Fetch intraday data (2-minute intervals) for real-time updates
+                // No fallback to daily data - we need real-time data only
+                const dailyData = await fetchWithProxies(chartUrl).catch(e => {
+                    console.error(`${ticker}: Failed to fetch intraday data:`, e.message);
+                    return null;
+                });
+                
+                // If intraday data fetch failed, return null (don't use stale daily data)
+                if (!dailyData || !dailyData.chart || !dailyData.chart.result || dailyData.chart.result.length === 0) {
+                    console.warn(`${ticker}: No intraday data available - real-time updates require intraday data`);
+                    return { currentPrice: null, changePercent: null, previousClose: null, dataTimestamp: null };
+                }
+                
+                let currentPrice = null;
+                let changePercent = null;
+                let dataTimestamp = null;
+                
+                // Extract current price and change percent from meta data and quote data
+                if (dailyData && dailyData.chart && dailyData.chart.result && dailyData.chart.result.length > 0) {
+                    const result = dailyData.chart.result[0];
+                    
+                    // Get current price and change percent directly from meta data (no calculations)
+                    if (result.meta) {
+                        // Use regularMarketPrice directly from Yahoo Finance
+                        currentPrice = result.meta.regularMarketPrice || null;
+                        
+                        // Use regularMarketChangePercent directly from Yahoo Finance (no calculations)
+                        // This is the official change percentage from Yahoo Finance
+                        changePercent = result.meta.regularMarketChangePercent || null;
+                        
+                        // Get timestamp from meta if available
+                        if (result.meta.regularMarketTime) {
+                            dataTimestamp = new Date(result.meta.regularMarketTime * 1000);
+                        }
+                    }
+                    
+                    // Fallback to quote data only if meta doesn't have the price
+                    if (currentPrice === null && result.timestamp && result.indicators && result.indicators.quote) {
+                        const timestamps = result.timestamp;
+                        const quote = result.indicators.quote[0];
+                        const closes = quote.close;
+                        
+                        // Get the most recent price (last data point)
+                        for (let i = closes.length - 1; i >= 0; i--) {
+                            if (closes[i] !== null && closes[i] !== undefined) {
+                                currentPrice = closes[i];
+                                dataTimestamp = timestamps[i] ? new Date(timestamps[i] * 1000) : null;
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                // Get previous close from meta data - this is the official previous close from Yahoo Finance
+                const previousClose = dailyData?.chart?.result?.[0]?.meta?.regularMarketPreviousClose || null;
+                
+                // Debug logging
+                if (currentPrice === null) {
+                    console.warn(`${ticker}: fetchCurrentPrice returned null for currentPrice`);
+                }
+                if (changePercent === null) {
+                    console.warn(`${ticker}: fetchCurrentPrice returned null for changePercent`);
+                }
+                if (previousClose === null) {
+                    console.warn(`${ticker}: fetchCurrentPrice returned null for previousClose`);
+                }
+                
+                // Return current price, change percent, previous close, and timestamp for real-time updates
+                return { currentPrice, changePercent, previousClose, dataTimestamp };
+                
+            } catch (error) {
+                if (retryCount < 2) {
+                    const backoffDelay = Math.pow(2, retryCount) * 1000;
+                    console.log(`Error fetching ${ticker}, retrying in ${backoffDelay}ms...`);
+                    await new Promise(resolve => setTimeout(resolve, backoffDelay));
+                    return fetchCurrentPrice(ticker, retryCount + 1);
+                }
+                throw error;
+            }
+        }
+
+        // Helper function to process tickers in parallel with concurrency limit
+        async function processBatch(tickers, batchSize, processor) {
+            const results = [];
+            for (let i = 0; i < tickers.length; i += batchSize) {
+                const batch = tickers.slice(i, i + batchSize);
+                const batchResults = await Promise.allSettled(
+                    batch.map(ticker => processor(ticker))
+                );
+                results.push(...batchResults);
+                // Longer delay between batches to avoid rate limiting
+                // Wait 2 seconds between batches to be very respectful of rate limits
+                if (i + batchSize < tickers.length) {
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                }
+            }
+            return results;
+        }
+
+        async function refreshCurrentPrices(forceRefresh = false) {
+            // Prevent overlapping calls (but allow if forced)
+            if (isRefreshing && !forceRefresh) {
+                console.log(`[${new Date().toLocaleTimeString()}] Refresh already in progress, skipping...`);
+                return;
+            }
+            
+            // Allow manual refresh even if real-time updates are off
+            if (!isRealTimeActive && !forceRefresh) {
+                console.log(`[${new Date().toLocaleTimeString()}] Real-time updates not active, skipping refresh`);
+                return;
+            }
+            
+            if (tickers.length === 0 || Object.keys(stockData).length === 0) {
+                console.log(`[${new Date().toLocaleTimeString()}] No tickers or data to refresh`);
+                return;
+            }
+            
+            console.log(`[${new Date().toLocaleTimeString()}] Starting refreshCurrentPrices... (forceRefresh: ${forceRefresh}, isRealTimeActive: ${isRealTimeActive})`);
+            isRefreshing = true;
+            const startTime = Date.now();
+            
+            try {
+                // Filter to only tickers with existing data
+                const tickersToRefresh = tickers.filter(ticker => stockData[ticker]);
+                
+                if (tickersToRefresh.length === 0) {
+                    return;
+                }
+                
+                let updateCount = 0;
+                let changedCount = 0;
+                
+                // Strategy: Try Finnhub first (more reliable, 60 calls/minute), then fallback to Yahoo Finance
+                console.log(`Attempting to fetch ${tickersToRefresh.length} tickers...`);
+                
+                let batchResults = {};
+                
+                // Try Finnhub first if API key is set, fallback to Yahoo Finance if rate limited
+                if (FINNHUB_API_KEY) {
+                    console.log('Using Finnhub API (free tier: 60 calls/minute)...');
+                    console.log(`Processing ${tickersToRefresh.length} tickers sequentially (will take ~${Math.ceil(tickersToRefresh.length * 1.5 / 60)} minutes)...`);
+                    
+                    try {
+                        batchResults = await fetchCurrentPricesBatchFromFinnhub(tickersToRefresh);
+                        
+                        const finnhubSuccessCount = Object.keys(batchResults).length;
+                        console.log(`Finnhub: got ${finnhubSuccessCount}/${tickersToRefresh.length} tickers`);
+                        
+                        // If Finnhub got all tickers, use it. Otherwise, try Yahoo Finance for missing ones
+                        if (finnhubSuccessCount === tickersToRefresh.length) {
+                            console.log('All tickers fetched from Finnhub');
+                        } else {
+                            const missingTickers = tickersToRefresh.filter(t => !batchResults[t]);
+                            console.log(`Fetching ${missingTickers.length} missing tickers from Yahoo Finance...`);
+                            const yahooResults = await fetchCurrentPricesBatch(missingTickers);
+                            // Merge results
+                            Object.assign(batchResults, yahooResults);
+                        }
+                    } catch (error) {
+                        // If Finnhub fails completely (e.g., rate limited from the start), fallback to Yahoo Finance
+                        if (error.message && error.message.includes('rate limit')) {
+                            console.warn('Finnhub rate limited - falling back to Yahoo Finance for all tickers...');
+                            batchResults = {};
+                        } else {
+                            throw error; // Re-throw if it's not a rate limit error
+                        }
+                    }
+                    
+                    // If we got rate limited and have no results, or very few results, use Yahoo Finance
+                    const finnhubSuccessCount = Object.keys(batchResults).length;
+                    if (finnhubSuccessCount < tickersToRefresh.length * 0.5) {
+                        // Got less than 50% from Finnhub, fallback to Yahoo Finance for all
+                        console.warn(`Finnhub only got ${finnhubSuccessCount}/${tickersToRefresh.length} tickers - falling back to Yahoo Finance for all tickers...`);
+                        batchResults = {};
+                    }
+                }
+                
+                // Use Yahoo Finance if no Finnhub API key, or if Finnhub failed/rate limited
+                if (Object.keys(batchResults).length === 0 || !FINNHUB_API_KEY) {
+                    if (!FINNHUB_API_KEY) {
+                        console.log('Finnhub API key not set, using Yahoo Finance...');
+                        console.log('To use Finnhub (more reliable), get a free API key from: https://finnhub.io/register');
+                        console.log('Then set it: setFinnhubApiKey("your_key_here")');
+                    } else {
+                        console.log('Falling back to Yahoo Finance due to Finnhub rate limiting...');
+                    }
+                    
+                    // Add initial delay before starting batch requests to avoid immediate rate limiting
+                    await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds before starting
+                    
+                    batchResults = await fetchCurrentPricesBatch(tickersToRefresh);
+                }
+                
+                // Check if batching worked (got at least some results)
+                const batchSuccessCount = Object.keys(batchResults).length;
+                
+                if (batchSuccessCount > 0) {
+                    console.log(`Batch fetch successful: got ${batchSuccessCount}/${tickersToRefresh.length} tickers`);
+                    
+                    // Process batch results
+                    for (const ticker of tickersToRefresh) {
+                        const batchData = batchResults[ticker];
+                        if (batchData && batchData.currentPrice !== null && stockData[ticker]) {
+                            const oldPrice = stockData[ticker].currentPrice;
+                            const oldChangePercent = stockData[ticker].changePercent;
+                            
+                            // Always update prices (even if they appear unchanged) to get latest closing prices
+                            // This ensures we get closing prices after market close
+                            stockData[ticker].currentPrice = batchData.currentPrice;
+                            
+                            // Update previous close if available
+                            if (batchData.previousClose !== null && batchData.previousClose !== undefined && batchData.previousClose !== 0) {
+                                stockData[ticker].previousClose = batchData.previousClose;
+                            }
+                            
+                            // Use changePercent directly from API (no calculations)
+                            if (batchData.changePercent !== null && batchData.changePercent !== undefined) {
+                                stockData[ticker].changePercent = batchData.changePercent;
+                            }
+                            
+                            // Check if data actually changed (for logging purposes)
+                            const priceChanged = Math.abs((oldPrice || 0) - batchData.currentPrice) > 0.01;
+                            const changePercentChanged = Math.abs((oldChangePercent || 0) - (stockData[ticker].changePercent || 0)) > 0.01;
+                            
+                            // Always count as updated (even if price appears unchanged) to ensure closing prices are captured
+                            updateCount++;
+                            
+                            if (priceChanged || changePercentChanged) {
+                                changedCount++;
+                                console.log(`${ticker}: Price updated - Old: $${oldPrice?.toFixed(2)} (${oldChangePercent?.toFixed(2)}%), New: $${batchData.currentPrice?.toFixed(2)} (${batchData.changePercent?.toFixed(2)}%)`);
+                            } else {
+                                // Log even if no change detected, to verify we're getting the right data
+                                // This helps debug if closing prices aren't updating
+                                const priceDiff = Math.abs((oldPrice || 0) - batchData.currentPrice);
+                                const changeDiff = Math.abs((oldChangePercent || 0) - (batchData.changePercent || 0));
+                                console.log(`${ticker}: Price checked - Finnhub: $${batchData.currentPrice?.toFixed(2)} (${batchData.changePercent?.toFixed(2)}%), Stored: $${oldPrice?.toFixed(2)} (${oldChangePercent?.toFixed(2)}%), Diff: $${priceDiff.toFixed(4)}, ${changeDiff.toFixed(4)}%`);
+                            }
+                        } else if (batchData && stockData[ticker]) {
+                            // Log if we got data but price is null
+                            console.warn(`${ticker}: Got batch data but currentPrice is null`, batchData);
+                        } else if (!batchData && stockData[ticker]) {
+                            // Log if we didn't get any data for this ticker
+                            console.warn(`${ticker}: No batch data received`);
+                        }
+                    }
+                } else {
+                    // Batching failed, fall back to individual requests (one at a time)
+                    console.log(`Batch fetch failed, falling back to individual requests...`);
+                    const CONCURRENCY_LIMIT = 1;
+                    
+                    const results = await processBatch(tickersToRefresh, CONCURRENCY_LIMIT, async (ticker) => {
+                        try {
+                            const { currentPrice, changePercent, previousClose, dataTimestamp } = await fetchCurrentPrice(ticker);
+                        
+                        if (currentPrice !== null && stockData[ticker]) {
+                            const oldPrice = stockData[ticker].currentPrice;
+                            const oldChangePercent = stockData[ticker].changePercent;
+                            
+                            // Update the current price
+                            stockData[ticker].currentPrice = currentPrice;
+                            
+                            // Update previous close if available (should remain constant during trading day)
+                            if (previousClose !== null && previousClose !== undefined) {
+                                stockData[ticker].previousClose = previousClose;
+                            }
+                            
+                            // Update previous close if available
+                            if (previousClose !== null && previousClose !== undefined && previousClose !== 0) {
+                                stockData[ticker].previousClose = previousClose;
+                            }
+                            
+                            // Use changePercent directly from Yahoo Finance (no calculations)
+                            if (changePercent !== null && changePercent !== undefined) {
+                                stockData[ticker].changePercent = changePercent;
+                            }
+                            // If changePercent is null, keep existing value (don't calculate)
+                            
+                            // Check if data actually changed
+                            const priceChanged = Math.abs((oldPrice || 0) - currentPrice) > 0.01;
+                            const changePercentChanged = Math.abs((oldChangePercent || 0) - (stockData[ticker].changePercent || 0)) > 0.01;
+                            
+                            if (priceChanged || changePercentChanged) {
+                                changedCount++;
+                            }
+                            
+                            updateCount++;
+                            return { success: true, ticker, changed: priceChanged || changePercentChanged };
+                        } else {
+                            console.warn(`${ticker}: No price data returned (currentPrice: ${currentPrice}, has stockData: ${!!stockData[ticker]})`);
+                        }
+                        return { success: false, ticker, error: 'No price data' };
+                    } catch (error) {
+                        // Log errors to help debug
+                        console.error(`Error refreshing ${ticker}:`, error.message);
+                        return { success: false, ticker, error: error.message };
+                    }
+                });
+                
+                // Process individual request results
+                for (const result of results) {
+                    if (result.status === 'fulfilled' && result.value.success) {
+                        updateCount++;
+                        if (result.value.changed) {
+                            changedCount++;
+                        }
+                    }
+                }
+                }
+                
+                // Always update the table if we processed any tickers, even if some failed
+                // This ensures the UI reflects any successful updates
+                if (tickersToRefresh.length > 0) {
+                    // Save updated data
+                    saveStockData();
+                    
+                    // Single table update to reflect any changes
+                    displayTable();
+                    
+                    // Reapply criteria highlights
+                    setTimeout(() => applyCriteria(), 10);
+                    
+                    // Update chart if it's showing the current ticker
+                    if (currentChartTicker && stockData[currentChartTicker]) {
+                        updateChart();
+                    }
+                    
+                    const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+                    if (updateCount > 0) {
+                        if (changedCount > 0) {
+                            console.log(`✓ Refreshed ${updateCount}/${tickersToRefresh.length} tickers (${changedCount} changed) in ${duration}s`);
+                        } else {
+                            console.log(`✓ Checked ${updateCount}/${tickersToRefresh.length} tickers (no changes) in ${duration}s`);
+                        }
+                    } else {
+                        console.warn(`⚠ No tickers updated (${tickersToRefresh.length} attempted)`);
+                    }
+                }
+            } catch (error) {
+                console.error('Error in refreshCurrentPrices:', error);
+            } finally {
+                isRefreshing = false;
+            }
+        }
+
+        // Diagnostic function to check real-time update status
+        function checkRealTimeStatus() {
+            console.log('=== Real-Time Update Status ===');
+            console.log('isRealTimeActive:', isRealTimeActive);
+            console.log('realTimeRefreshInterval:', realTimeRefreshInterval ? 'SET' : 'NULL');
+            console.log('isRefreshing:', isRefreshing);
+            if (realTimeRefreshInterval) {
+                console.log('Interval is running');
+            } else {
+                console.warn('⚠ Interval is NOT running - real-time updates may not be active');
+            }
+            console.log('Number of tickers:', tickers.length);
+            console.log('Stock data entries:', Object.keys(stockData).length);
+            console.log('===============================');
+        }
+        
+        // Make it available globally for debugging
+        window.checkRealTimeStatus = checkRealTimeStatus;
+        
+        function toggleRealTimeUpdates() {
+            const button = document.getElementById('realTimeToggle');
+            
+            if (isRealTimeActive) {
+                // Stop real-time updates
+                console.log(`[${new Date().toLocaleTimeString()}] Stopping real-time updates...`);
+                if (realTimeRefreshInterval) {
+                    clearInterval(realTimeRefreshInterval);
+                    realTimeRefreshInterval = null;
+                    console.log('Real-time interval cleared');
+                }
+                isRealTimeActive = false;
+                isRefreshing = false;
+                button.textContent = 'Start Real-Time Updates';
+                button.style.background = '#28a745'; // Green when inactive
+                showMessage('Real-time updates stopped', 'success');
+            } else {
+                // Start real-time updates
+                if (tickers.length === 0 || Object.keys(stockData).length === 0) {
+                    showMessage('Please add tickers and fetch data first', 'error');
+                    return;
+                }
+                
+                console.log('Starting real-time updates...');
+                isRealTimeActive = true;
+                
+                // Calculate refresh interval based on number of tickers
+                // With Finnhub (60 calls/minute), we can refresh more frequently
+                // Base: 5 seconds, add 1 second per ticker (min 5s, max 60s)
+                // If using Finnhub, we can refresh every 60 seconds safely (60 calls/minute)
+                const baseInterval = FINNHUB_API_KEY ? 5000 : 10000; // Faster if using Finnhub
+                const perTickerDelay = FINNHUB_API_KEY ? 1000 : 3000; // Faster if using Finnhub
+                const maxInterval = FINNHUB_API_KEY ? 60000 : 120000; // 60s for Finnhub, 120s for Yahoo
+                const calculatedInterval = Math.min(baseInterval + (tickers.length * perTickerDelay), maxInterval);
+                const intervalSeconds = (calculatedInterval / 1000).toFixed(0);
+                
+                console.log(`Real-time interval set to ${intervalSeconds} seconds for ${tickers.length} ticker(s)`);
+                
+                // Refresh immediately, then set up interval
+                console.log('Triggering initial refresh...');
+                refreshCurrentPrices();
+                
+                // Set up interval with logging
+                realTimeRefreshInterval = setInterval(() => {
+                    if (isRealTimeActive) {
+                        console.log(`[${new Date().toLocaleTimeString()}] Auto-refresh triggered (interval: ${calculatedInterval/1000}s)`);
+                        refreshCurrentPrices();
+                    } else {
+                        console.log('Real-time updates inactive, clearing interval');
+                        if (realTimeRefreshInterval) {
+                            clearInterval(realTimeRefreshInterval);
+                            realTimeRefreshInterval = null;
+                        }
+                    }
+                }, calculatedInterval);
+                
+                console.log(`Real-time interval set: ${calculatedInterval/1000}s (${calculatedInterval}ms)`);
+                console.log('Next auto-refresh will occur at:', new Date(Date.now() + calculatedInterval).toLocaleTimeString());
+                
+                button.textContent = 'Stop Real-Time Updates';
+                button.style.background = '#dc3545';
+                const intervalMsg = calculatedInterval < 10000 
+                    ? `Real-time updates started (refreshing every ${intervalSeconds} seconds)`
+                    : `Real-time updates started (refreshing every ${intervalSeconds} seconds to avoid rate limiting)`;
+                showMessage(intervalMsg, 'success');
+            }
+        }
+
+        // Table Display
+        function displayTable() {
+            const thead = document.getElementById('tableHead');
+            const tbody = document.getElementById('tableBody');
+            
+            if (!thead || !tbody) {
+                console.error('Table elements not found');
+                return;
+            }
+            
+            // Clear only the header row, preserve the column selector row
+            const columnSelectorRow = document.getElementById('columnSelectorRow');
+            // Remove all rows except the column selector row
+            const rows = thead.querySelectorAll('tr');
+            rows.forEach(row => {
+                if (row.id !== 'columnSelectorRow') {
+                    row.remove();
+                }
+            });
+            tbody.innerHTML = '';
+
+            console.log('Displaying table with', Object.keys(stockData).length, 'tickers');
+
+            // Always create header, even if there's no data
+            // Create header first
+            const headerRow = document.createElement('tr');
+            // Always show Ticker column first
+            const tickerTh = document.createElement('th');
+            tickerTh.textContent = 'Ticker';
+            headerRow.appendChild(tickerTh);
+            // Then show other columns based on visibility settings
+            Object.keys(visibleColumns).forEach(col => {
+                if (col !== 'Ticker' && visibleColumns[col]) {
+                    const th = document.createElement('th');
+                    th.textContent = col;
+                    // Add light gray background to calculated columns
+                    if (col === 'Target Price' || col === 'Low Price Range Top' || col === 'High Price Decline Target') {
+                        th.classList.add('calculated-column');
+                    }
+                    headerRow.appendChild(th);
+                }
+            });
+            thead.appendChild(headerRow);
+            
+            // Update column selector row after header is created to match column order
+            updateColumnSelectorRow();
+            
+            // Update sticky positions after table structure is created
+            setTimeout(() => updateStickyPositions(), 10);
+
+            // Create rows - use the order from the tickers array (Ticker Management section)
+            // Filter to only include tickers that have data, maintaining the user's order
+            const sortedTickers = tickers.filter(ticker => stockData[ticker] !== undefined);
+            console.log('Creating rows for tickers (in user order):', sortedTickers);
+            
+            if (sortedTickers.length === 0) {
+                // Calculate colspan based on number of visible columns
+                const visibleColCount = Object.values(visibleColumns).filter(v => v).length;
+                tbody.innerHTML = `<tr><td colspan="${visibleColCount}" style="text-align: center; padding: 20px;">No stock data available. Add tickers and fetch data.</td></tr>`;
+                return;
+            }
+            
+            sortedTickers.forEach(ticker => {
+                const data = stockData[ticker];
+                
+                if (!data) {
+                    console.warn(`No data found for ticker: ${ticker}`);
+                    return;
+                }
+                
+                const row = document.createElement('tr');
+                row.id = `row-${ticker}`;
+
+                // Always show Ticker column (cannot be hidden)
+                const td = document.createElement('td');
+                const link = document.createElement('span');
+                link.className = 'ticker-clickable';
+                link.textContent = ticker;
+                link.onclick = () => selectTickerForChart(ticker);
+                // Add tooltip with company name
+                const companyName = data.companyName || ticker;
+                link.title = companyName;
+                link.setAttribute('data-tooltip', companyName);
+                td.appendChild(link);
+                row.appendChild(td);
+
+                if (visibleColumns['Change %']) {
+                    const td = document.createElement('td');
+                    const change = data.changePercent || 0;
+                    td.textContent = `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
+                    td.style.color = change >= 0 ? '#28a745' : '#dc3545';
+                    row.appendChild(td);
+                }
+
+                if (visibleColumns['Current Price']) {
+                    const td = document.createElement('td');
+                    td.textContent = data.currentPrice ? `$${data.currentPrice.toFixed(2)}` : 'N/A';
+                    row.appendChild(td);
+                }
+
+
+                if (visibleColumns['Target Price']) {
+                    const td = document.createElement('td');
+                    td.classList.add('calculated-column');
+                    // Calculate Target Price (Target Decline Price) based on criterion 1 value
+                    // Target price = priorClose * (1 - X/100)
+                    // Since priorClose = currentPrice / (1 + changePercent/100), we can calculate:
+                    // Target price = currentPrice / (1 + changePercent/100) * (1 - X/100)
+                    const crit1 = document.getElementById('criterion1').value.trim();
+                    if (crit1 && data.currentPrice !== null && data.currentPrice !== undefined && 
+                        data.changePercent !== null && data.changePercent !== undefined) {
+                        const percent = parseFloat(crit1);
+                        if (!isNaN(percent) && percent > 0) {
+                            // Calculate priorClose from currentPrice and changePercent
+                            const priorClose = data.currentPrice / (1 + data.changePercent / 100);
+                            const targetDeclinePrice = priorClose * (1 - percent / 100);
+                            td.textContent = `$${targetDeclinePrice.toFixed(2)}`;
+                        } else {
+                            td.textContent = 'N/A';
+                        }
+                    } else {
+                        td.textContent = 'N/A';
+                    }
+                    row.appendChild(td);
+                }
+
+                if (visibleColumns['90-Day Low']) {
+                    const td = document.createElement('td');
+                    td.textContent = data.low90 ? `$${data.low90.toFixed(2)}` : 'N/A';
+                    row.appendChild(td);
+                }
+
+                if (visibleColumns['Low Price Range Top']) {
+                    const td = document.createElement('td');
+                    td.classList.add('calculated-column');
+                    // Calculate Low Price Range Top based on criterion 2 value
+                    const crit2 = document.getElementById('criterion2').value.trim();
+                    if (crit2 && data.low90) {
+                        const percent = parseFloat(crit2);
+                        if (!isNaN(percent) && percent > 0) {
+                            const lowPriceRangeTop = data.low90 + (data.low90 * percent / 100);
+                            td.textContent = `$${lowPriceRangeTop.toFixed(2)}`;
+                        } else {
+                            td.textContent = 'N/A';
+                        }
+                    } else {
+                        td.textContent = 'N/A';
+                    }
+                    row.appendChild(td);
+                }
+
+                if (visibleColumns['90-Day High']) {
+                    const td = document.createElement('td');
+                    td.textContent = data.high90 ? `$${data.high90.toFixed(2)}` : 'N/A';
+                    row.appendChild(td);
+                }
+
+                if (visibleColumns['High Price Decline Target']) {
+                    const td = document.createElement('td');
+                    td.classList.add('calculated-column');
+                    // Calculate High Price Decline Target based on criterion 3 value
+                    const crit3 = document.getElementById('criterion3').value.trim();
+                    if (crit3 && data.high90) {
+                        const percent = parseFloat(crit3);
+                        if (!isNaN(percent) && percent > 0) {
+                            const highPriceTargetDeclinePrice = data.high90 - (data.high90 * percent / 100);
+                            td.textContent = `$${highPriceTargetDeclinePrice.toFixed(2)}`;
+                        } else {
+                            td.textContent = 'N/A';
+                        }
+                    } else {
+                        td.textContent = 'N/A';
+                    }
+                    row.appendChild(td);
+                }
+
+
+                tbody.appendChild(row);
+            });
+
+            // Select first ticker for chart by default
+            if (sortedTickers.length > 0 && !currentChartTicker) {
+                selectTickerForChart(sortedTickers[0]);
+            }
+            
+            // Update sticky positions after table is rendered
+            setTimeout(() => {
+                updateStickyPositions();
+            }, 100);
+        }
+
+        function setupColumnSelector() {
+            // This function is now called from displayTable to ensure alignment
+            console.log('setupColumnSelector called');
+            updateColumnSelectorRow();
+        }
+        
+        function updateColumnSelectorRow() {
+            const selectorRow = document.getElementById('columnSelectorRow');
+            console.log('updateColumnSelectorRow called, selectorRow:', selectorRow);
+            if (!selectorRow) {
+                console.error('columnSelectorRow element not found!');
+                return;
+            }
+            
+            // Clear existing checkboxes
+            selectorRow.innerHTML = '';
+            
+            // Add empty cell for Ticker column (always visible, no checkbox)
+            const tickerTh = document.createElement('th');
+            tickerTh.textContent = ''; // Empty cell for Ticker column
+            selectorRow.appendChild(tickerTh);
+            
+            // Try to get the order of visible columns from the table header
+            const headerRow = document.querySelector('thead tr:last-child');
+            let columnOrder = [];
+            
+            console.log('Header row found:', headerRow);
+            if (headerRow && headerRow.querySelectorAll('th').length > 0) {
+                // Get the actual column order from the table (table has been rendered)
+                headerRow.querySelectorAll('th').forEach(th => {
+                    const colName = th.textContent.trim();
+                    if (colName && colName !== 'Ticker') {
+                        columnOrder.push(colName);
+                    }
+                });
+                console.log('Column order from header:', columnOrder);
+            }
+            
+            // If no table header exists or columnOrder is empty, use all columns from visibleColumns
+            if (columnOrder.length === 0) {
+                columnOrder = Object.keys(visibleColumns).filter(col => col !== 'Ticker');
+                console.log('Using default column order:', columnOrder);
+            }
+            
+            console.log('Creating checkboxes for columns:', columnOrder);
+            // Add checkboxes for columns in the determined order
+            columnOrder.forEach(col => {
+                if (visibleColumns.hasOwnProperty(col) && col !== 'Ticker') {
+                    const th = document.createElement('th');
+                    const label = document.createElement('label');
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.checked = visibleColumns[col];
+                    checkbox.onchange = () => {
+                        visibleColumns[col] = checkbox.checked;
+                        displayTable();
+                        // Re-apply criteria highlights after table is recreated
+                        setTimeout(() => applyCriteria(), 10);
+                    };
+                    label.appendChild(checkbox);
+                    label.appendChild(document.createTextNode(col));
+                    th.appendChild(label);
+                    selectorRow.appendChild(th);
+                    console.log('Added checkbox for:', col);
+                }
+            });
+            console.log('Column selector row now has', selectorRow.children.length, 'cells');
+        }
+
+        // Criteria Filtering
+        function applyCriteria() {
+            const crit1 = document.getElementById('criterion1').value.trim();
+            const crit2 = document.getElementById('criterion2').value.trim();
+            const crit3 = document.getElementById('criterion3').value.trim();
+
+            // Remove all highlights
+            document.querySelectorAll('tr.highlight').forEach(row => {
+                row.classList.remove('highlight');
+            });
+
+            // If no criteria are entered, don't highlight anything
+            if (!crit1 && !crit2 && !crit3) {
+                return;
+            }
+
+            // Apply criteria - only consider criteria that have values entered
+            Object.keys(stockData).forEach(ticker => {
+                const data = stockData[ticker];
+                let meetsAllCriteria = true;
+
+                // Criterion 1: % Lower Than Prior Close
+                // Only apply if a value is entered (not empty)
+                // If changePercent < -X%, then currentPrice is X% lower than priorClose
+                if (crit1) {
+                    const percent = parseFloat(crit1);
+                    if (!isNaN(percent) && percent > 0) {
+                        // Check if required data exists
+                        if (data.changePercent === null || data.changePercent === undefined) {
+                            // If data is missing, this criterion cannot be satisfied
+                            meetsAllCriteria = false;
+                        } else {
+                            // Check if changePercent is less than -percent (meaning price is percent% lower than prior close)
+                            if (data.changePercent >= -percent) {
+                                meetsAllCriteria = false;
+                            }
+                        }
+                    }
+                }
+                // If field is empty, this criterion is ignored (not applied)
+
+                // Criterion 2: % Within the 90-Day Low
+                // Only apply if a value is entered (not empty)
+                if (crit2) {
+                    const percent = parseFloat(crit2);
+                    if (!isNaN(percent) && percent > 0) {
+                        // Check if required data exists
+                        if (data.low90 === null || data.low90 === undefined || 
+                            data.currentPrice === null || data.currentPrice === undefined) {
+                            // If data is missing, this criterion cannot be satisfied
+                            meetsAllCriteria = false;
+                        } else {
+                            const lowPriceRangeTop = data.low90 + (data.low90 * percent / 100);
+                            if (data.currentPrice > lowPriceRangeTop) {
+                                meetsAllCriteria = false;
+                            }
+                        }
+                    }
+                }
+                // If field is empty, this criterion is ignored (not applied)
+
+                // Criterion 3: % Lower Than 90-Day High
+                // Only apply if a value is entered (not empty)
+                if (crit3) {
+                    const percent = parseFloat(crit3);
+                    if (!isNaN(percent) && percent > 0) {
+                        // Check if required data exists
+                        if (data.high90 === null || data.high90 === undefined || 
+                            data.currentPrice === null || data.currentPrice === undefined) {
+                            // If data is missing, this criterion cannot be satisfied
+                            meetsAllCriteria = false;
+                        } else {
+                            const highPriceTargetDeclinePrice = data.high90 - (data.high90 * percent / 100);
+                            if (data.currentPrice > highPriceTargetDeclinePrice) {
+                                meetsAllCriteria = false;
+                            }
+                        }
+                    }
+                }
+                // If field is empty, this criterion is ignored (not applied)
+
+                // Only highlight if all entered criteria are met
+                if (meetsAllCriteria) {
+                    const row = document.getElementById(`row-${ticker}`);
+                    if (row) {
+                        row.classList.add('highlight');
+                    }
+                }
+            });
+        }
+
+        // Chart Management
+        function setupChartControls() {
+            const controls = document.getElementById('chartControls');
+            const periods = [
+                { label: '1 Day', value: 1 },
+                { label: '3 Days', value: 3 },
+                { label: '5 Days', value: 5 },
+                { label: '10 Days', value: 10 },
+                { label: '30 Days', value: 30 },
+                { label: '90 Days', value: 90 },
+                { label: '180 Days', value: 180 },
+                { label: '1 Year', value: 252 } // ~252 trading days in a year
+            ];
+
+            periods.forEach(period => {
+                const btn = document.createElement('button');
+                btn.textContent = period.label;
+                btn.onclick = () => {
+                    currentTimePeriod = period.value;
+                    updateChart();
+                    document.querySelectorAll('#chartControls button').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                };
+                if (period.value === currentTimePeriod) {
+                    btn.classList.add('active');
+                }
+                controls.appendChild(btn);
+            });
+        }
+
+        function selectTickerForChart(ticker) {
+            if (!stockData[ticker]) {
+                showMessage('No data available for this ticker', 'error');
+                return;
+            }
+            currentChartTicker = ticker;
+            updateChart();
+        }
+
+        async function updateChartWithIntradayData(days = 1) {
+            if (!currentChartTicker) {
+                console.warn('No ticker selected for chart');
+                return;
+            }
+
+            const ticker = currentChartTicker;
+            const ctx = document.getElementById('stockChart');
+            
+            if (!ctx) {
+                console.error('Chart canvas element not found');
+                return;
+            }
+            
+            const chartContext = ctx.getContext('2d');
+
+            if (chart) {
+                chart.destroy();
+            }
+
+            // Show loading message
+            console.log(`Fetching intraday data for ${ticker}, ${days} day(s)...`);
+            showMessage(`Fetching intraday data for ${days} day(s)...`, 'success');
+
+            try {
+                // Optimize interval based on days to reduce data points and fetch time
+                // Use larger intervals for longer periods to speed up fetching
+                let interval = '5m';
+                let range = '1d';
+                
+                if (days === 1) {
+                    interval = '5m';
+                    range = '1d';
+                } else if (days === 3) {
+                    interval = '15m'; // 15-minute intervals for 3 days (faster, fewer data points)
+                    range = '5d';
+                } else if (days === 5) {
+                    interval = '15m'; // 15-minute intervals for 5 days
+                    range = '5d';
+                } else if (days === 10) {
+                    interval = '1h'; // 1-hour intervals for 10 days (much faster)
+                    range = '5d';
+                }
+                
+                // Add cache-busting timestamp
+                const timestamp = Date.now();
+                const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=${interval}&range=${range}&_=${timestamp}`;
+                
+                // Use only the most reliable proxy first (faster than trying all)
+                const proxyOptions = [
+                    `https://api.allorigins.win/raw?url=${encodeURIComponent(yahooUrl)}`,
+                    `https://corsproxy.io/?${encodeURIComponent(yahooUrl)}`
+                ];
+                
+                let response = null;
+                let lastError = null;
+                
+                // Add timeout to prevent long waits
+                const timeout = 8000; // 8 seconds timeout
+                
+                for (let i = 0; i < proxyOptions.length; i++) {
+                    const proxyUrl = proxyOptions[i];
+                    try {
+                        const timeoutPromise = new Promise((_, reject) => 
+                            setTimeout(() => reject(new Error('Request timeout')), timeout)
+                        );
+                        
+                        response = await Promise.race([
+                            fetch(proxyUrl, {
+                                method: 'GET',
+                                headers: { 'Accept': 'application/json' },
+                                mode: 'cors'
+                            }),
+                            timeoutPromise
+                        ]);
+                        
+                        if (response.ok) {
+                            break;
+                        }
+                    } catch (error) {
+                        lastError = error;
+                        continue;
+                    }
+                }
+                
+                if (!response || !response.ok) {
+                    const errorMsg = lastError ? lastError.message : `HTTP ${response?.status || 'unknown'}`;
+                    console.error('All proxies failed. Last error:', errorMsg);
+                    throw new Error(`Failed to fetch intraday data: ${errorMsg}`);
+                }
+                
+                const data = await response.json();
+                console.log('Intraday data response received:', data);
+                
+                if (!data.chart || !data.chart.result || data.chart.result.length === 0) {
+                    console.error('No chart data in response:', data);
+                    throw new Error('No intraday data available');
+                }
+                
+                const result = data.chart.result[0];
+                if (!result.timestamp || !result.indicators || !result.indicators.quote) {
+                    console.error('Invalid data structure:', result);
+                    throw new Error('Invalid intraday data format');
+                }
+                
+                const timestamps = result.timestamp;
+                const quote = result.indicators.quote[0];
+                const closes = quote.close;
+                
+                // Optimized: Filter and process in a single pass
+                const now = new Date();
+                const cutoffDate = new Date(now);
+                cutoffDate.setDate(cutoffDate.getDate() - days);
+                
+                const chartPrices = [];
+                const chartLabels = [];
+                
+                // Process data in reverse (most recent first) and stop when we have enough
+                for (let i = timestamps.length - 1; i >= 0; i--) {
+                    if (closes[i] !== null && closes[i] !== undefined) {
+                        const time = new Date(timestamps[i] * 1000);
+                        if (time >= cutoffDate) {
+                            chartPrices.unshift(closes[i]);
+                            // Generate label based on days
+                            if (days === 1) {
+                                chartLabels.unshift(time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }));
+                            } else {
+                                chartLabels.unshift(time.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }));
+                            }
+                        }
+                    }
+                }
+                
+                if (chartPrices.length === 0) {
+                    throw new Error('No valid intraday data points found');
+                }
+                
+                chart = new Chart(chartContext, {
+                    type: 'line',
+                    data: {
+                        labels: chartLabels,
+                        datasets: [{
+                            label: `${ticker} Intraday Price (${interval} intervals)`,
+                            data: chartPrices,
+                            borderColor: '#4A90E2',
+                            backgroundColor: 'rgba(74, 144, 226, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: `${ticker} - ${days} Day${days > 1 ? 's' : ''} Intraday Performance`,
+                                font: { size: 16 }
+                            },
+                            legend: {
+                                display: true
+                            }
+                        },
+                        scales: {
+                            x: {
+                                ticks: {
+                                    maxTicksLimit: days === 1 ? 20 : days * 10 // More ticks for multi-day charts
+                                }
+                            },
+                            y: {
+                                beginAtZero: false,
+                                ticks: {
+                                    callback: function(value) {
+                                        return '$' + value.toFixed(2);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+                
+                console.log('Chart created successfully');
+                showMessage(`Intraday chart loaded successfully`, 'success');
+                
+            } catch (error) {
+                console.error('Error fetching intraday data:', error);
+                showMessage(`Error fetching intraday data: ${error.message}. Falling back to daily data.`, 'warning');
+                // Fall back to using daily data from updateChart() instead of creating a minimal chart
+                // This ensures the chart is properly initialized and uses the same code path as 30-day charts
+                const data = stockData[ticker];
+                if (data && data.prices && data.prices.length > 0) {
+                    console.log('Falling back to daily data path');
+                    // Temporarily change currentTimePeriod to use daily data, then restore it
+                    const originalPeriod = currentTimePeriod;
+                    // Use a period that will trigger the daily data path (30 days or more)
+                    // Calculate how many days of daily data to show (limit to available data)
+                    const availableDays = Math.min(data.prices.length, 30);
+                    currentTimePeriod = availableDays;
+                    // Call updateChart which will use the daily data path
+                    // Prevent recursion by checking if we're already in a fallback
+                    if (!window._inChartFallback) {
+                        window._inChartFallback = true;
+                        await updateChart();
+                        window._inChartFallback = false;
+                    }
+                    // Restore the original period
+                    currentTimePeriod = originalPeriod;
+                } else {
+                    console.error('No fallback data available');
+                    showMessage(`No data available for ${ticker}. Please refresh data first.`, 'error');
+                }
+            }
+        }
+
+        async function updateChart() {
+            if (!currentChartTicker) {
+                console.warn('updateChart called but no ticker selected');
+                return;
+            }
+            
+            if (!stockData[currentChartTicker]) {
+                console.warn(`updateChart called but no data for ${currentChartTicker}`);
+                showMessage(`No data available for ${currentChartTicker}. Please refresh data first.`, 'error');
+                return;
+            }
+
+            const data = stockData[currentChartTicker];
+            console.log(`Updating chart for ${currentChartTicker}, period: ${currentTimePeriod} days`);
+            
+            // For 1, 3, 5, and 10-day views, fetch intraday data (5-minute intervals)
+            // Skip intraday fetch if we're in a fallback (to prevent recursion)
+            if (!window._inChartFallback && (currentTimePeriod === 1 || currentTimePeriod === 3 || currentTimePeriod === 5 || currentTimePeriod === 10)) {
+                console.log(`Using intraday data for ${currentTimePeriod}-day chart`);
+                await updateChartWithIntradayData(currentTimePeriod);
+                return;
+            }
+            
+            // For longer periods (30, 90, 180, 252 days), use daily closing prices
+            const days = Math.min(currentTimePeriod, data.prices.length);
+            const chartDates = data.dates.slice(-days);
+            const chartPrices = data.prices.slice(-days);
+
+            const ctx = document.getElementById('stockChart').getContext('2d');
+
+            if (chart) {
+                chart.destroy();
+            }
+
+            // Find indices of 90-day low and high in the chart data
+            // The 90-day low/high are now based on intraday highs/lows
+            // Find the dates where these occurred and mark those dates on the chart
+            let low90Index = -1;
+            let high90Index = -1;
+            
+            // Find the indices by matching dates (since high90/low90 are intraday values, not closing prices)
+            if (data.low90Date) {
+                low90Index = chartDates.findIndex(date => date === data.low90Date);
+            }
+            if (data.high90Date) {
+                high90Index = chartDates.findIndex(date => date === data.high90Date);
+            }
+            
+            // Fallback: if dates don't match, try to find by price value (in case date format differs)
+            if (low90Index === -1) {
+                const tolerance = 0.01;
+                for (let i = 0; i < chartPrices.length; i++) {
+                    // Check if this date's intraday low matches (approximate check)
+                    if (Math.abs(chartPrices[i] - data.low90) < tolerance * 10) { // Wider tolerance for intraday vs close
+                        low90Index = i;
+                        break;
+                    }
+                }
+            }
+            if (high90Index === -1) {
+                const tolerance = 0.01;
+                for (let i = 0; i < chartPrices.length; i++) {
+                    // Check if this date's intraday high matches (approximate check)
+                    if (Math.abs(chartPrices[i] - data.high90) < tolerance * 10) { // Wider tolerance for intraday vs close
+                        high90Index = i;
+                        break;
+                    }
+                }
+            }
+
+            // Create datasets for markers (only show points at specific indices)
+            const low90MarkerData = chartPrices.map((price, index) => 
+                index === low90Index ? data.low90 : null
+            );
+            const high90MarkerData = chartPrices.map((price, index) => 
+                index === high90Index ? data.high90 : null
+            );
+
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: chartDates.map(d => new Date(d).toLocaleDateString()),
+                    datasets: [
+                        {
+                            label: currentTimePeriod <= 10 ? `${currentChartTicker} Intraday High` : `${currentChartTicker} Price`,
+                            data: chartPrices,
+                            borderColor: '#4A90E2',
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 0 // Hide default points
+                        },
+                        {
+                            label: '90-Day Low',
+                            data: low90MarkerData,
+                            borderColor: '#dc3545',
+                            backgroundColor: '#dc3545',
+                            pointRadius: 6,
+                            pointHoverRadius: 8,
+                            pointStyle: 'circle',
+                            showLine: false, // Only show the point, not a line
+                            order: 1 // Draw on top
+                        },
+                        {
+                            label: '90-Day High',
+                            data: high90MarkerData,
+                            borderColor: '#28a745',
+                            backgroundColor: '#28a745',
+                            pointRadius: 6,
+                            pointHoverRadius: 8,
+                            pointStyle: 'circle',
+                            showLine: false, // Only show the point, not a line
+                            order: 1 // Draw on top
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: `${currentChartTicker} - ${currentTimePeriod} Day Performance${currentTimePeriod <= 10 ? ' (Intraday Highs)' : ''}`,
+                            font: {
+                                size: 16
+                            }
+                        },
+                        legend: {
+                            display: true
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toFixed(2);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Utility Functions
+        function showMessage(message, type) {
+            // Remove existing messages
+            document.querySelectorAll('.error, .success').forEach(el => el.remove());
+
+            const msgDiv = document.createElement('div');
+            msgDiv.className = type;
+            msgDiv.textContent = message;
+            document.querySelector('.container').insertBefore(msgDiv, document.querySelector('.container').firstChild);
+
+            setTimeout(() => {
+                msgDiv.remove();
+            }, 5000);
+        }
+
+        // Enter key support
+        document.getElementById('tickerInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addTicker();
+            }
+        });
+    </script>
+</body>
+</html>
